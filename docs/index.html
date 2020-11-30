@@ -16,75 +16,44 @@
 </style>
 
 <body>
+  <a href="https://github.com/boscoh/rolling-globe">
+    <img 
+      style="position: absolute; top: 0; right: 0; border: 0;" 
+      src="https://s3.amazonaws.com/github/ribbons/forkme_right_green_007200.png" 
+      alt="Fork me on GitHub">
+  </a>
 
-  <h1>World Economy & Income Groups</h1>
+  <h1>Rolling Chloropeth Globe Demo</h1>
 
   <div id="app">
 
     <input
-    type="radio"
-    v-model="mode"
-    value="economy"
-    @change="changeMode"/>
-  economy
+      type="radio"
+      v-model="mode"
+      value="pop_est"
+      @change="changeMode"/>
+    population
 
-  <input
-    type="radio"
-    v-model="mode"
-    value="income_grp"
-    @change="changeMode"/>
-  income_grp
+    <input
+      type="radio"
+      v-model="mode"
+      value="gdp_md_est"
+      @change="changeMode"/>
+    gross domestic product (M)
 
-  <!-- legend from: -->
-  <!-- https://tilemill-project.github.io/tilemill/docs/guides/advanced-legends/ -->
-  
-  <div id ="economy" class='my-legend' style="display:none;">
-    <div class='legend-title'>Economy</div>
-    <div class='legend-scale'>
-      <ul class='legend-labels'>
-        <li><span style='background:#8B4513;'></span>7. Least developed region</li>
-        <li><span style='background:#FF1493;'></span>6. Developing region</li>
-        <li><span style='background:#FF0000;'></span>5. Emerging region: G20</li>
-        <li><span style='background:#800080;'></span>4. Emerging region: MIKT</li>
-        <li><span style='background:#FFA500;'></span>3. Emerging region: BRIC</li>
-        <li><span style='background:#FFFF00;'></span>2. Developed region: nonG7</li>
-        <li><span style='background:#0000FF;'></span>1. Developed region: G7</li>
-        
-      </ul>
-    </div>
-    
-    </div>
+    <input
+      type="radio"
+      v-model="mode"
+      value="gdp_per_cap"
+      @change="changeMode"/>
+    gross domestic product per capita
 
-
-    <div id ="incomeGroups" class='my-legend' style="display:none;">
-      <div class='legend-title'>Income Groups</div>
-      <div class='legend-scale'>
-        <ul class='legend-labels'>
-          <li><span style='background:#98FB98;'></span>Low</li>
-          <li><span style='background:#32CD32;'></span>Lower Middle</li>
-          <li><span style='background:#228B22;'></span>Upper Middle</li>
-          <li><span style='background:#006400;'></span>High</li>
-          
-          
-        </ul>
-      </div>
-      
-      </div>
-
-    <div id = "economyMessage" style="margin-right: 350;" style="display: none;">
-      {{ message }}
-      &nbsp;
-    </div>
-
-    <div id = "incomeMessage" style="margin-right: 200;" style="display: none;">
+    <div>
       {{ message }}
       &nbsp;
     </div>
 
   </div>
-
-  <!-- globe structure from: -->
-  <!-- https://github.com/boscoh/rolling-globe -->
 
   <div 
     id="globe"
@@ -95,10 +64,11 @@
 
 </body>
 
+<!-- development version, includes helpful console warnings -->
 <script src="./require.js"></script>
 <script>
   require([
-    '../dist/rolling-globe.min.js',
+    './rolling-globe.min.js',
     './vue.min.js',
   ], function (rollingGlobe, Vue) {
 
@@ -109,7 +79,7 @@
 
       data: {
         message: '',
-        mode: 'economy'
+        mode: 'pop_est' // or 'gdp_md_est
       },
 
       mounted: function () {
@@ -132,7 +102,7 @@
 
         this.changeMode()
 
-        let i = g.getICountry({'iso_a3': 'USA'})
+        let i = g.getICountry({'iso_a3': 'AUS'})
         g.rotateTransitionToICountry(i)
       },
 
@@ -140,142 +110,42 @@
 
         changeMode: function () {
           let propertyKey = this.mode
-
-          var legend1 = document.getElementById("economy");
-          var legend2 = document.getElementById("incomeGroups");
-
-          var message1 = document.getElementById("economyMessage");
-          var message2 = document.getElementById("incomeMessage");
-
-          if(propertyKey == 'economy') {
-            legend2.style.display="none";
-            message2.style.display="none";
-            legend1.style.display="block";
-            message1.style.display="block";
-          }
-
-          if(propertyKey == 'income_grp') {
-            legend1.style.display="none";
-            message1.style.display="none";
-            legend2.style.display="block";
-            message2.style.display="block";
-          }
-          
-          //economy
-
-          if(propertyKey == 'economy') {
-
           for (let i = 0; i < g.features.length; i += 1) {
             let country = g.features[i]
             let value
-
-            value = country.properties.economy
-          
-
-            if(value == "1. Developed region: G7") {
-              g.colors[i] = "#0000FF"
-            }
-            else if(value == "2. Developed region: nonG7") {
-              g.colors[i] = "	#FFFF00"
-            }
-            else if(value == "3. Emerging region: BRIC") {
-              g.colors[i] = "#FFA500"
-            }
-            else if(value == "4. Emerging region: MIKT") {
-              g.colors[i] = "#800080"
-            }
-            else if(value == "5. Emerging region: G20") {
-              g.colors[i] = "#FF0000"
-            }
-            else if(value == "6. Developing region") {
-              g.colors[i] = "	#FF1493"
-            }
-            else if(value == "7. Least developed region") {
-              g.colors[i] = "#8B4513"
+            if (propertyKey === 'gdp_per_cap') {
+              let gdp = parseFloat(country.properties.gdp_md_est)
+              let pop = parseFloat(country.properties.pop_est)
+              if (gdp < 0 || pop < 0) {
+                value = 0
+              } else {
+                value = parseInt(1000000 * gdp / pop)
+              }
+            } else {
+              value = country.properties[propertyKey]
             }
             g.values[i] = value
           }
-
-          g.draw()
-
-        }
-
-        //income_grp
-
-        else{
-
-          for (let i = 0; i < g.features.length; i += 1) {
-            let country = g.features[i]
-            let value
-
-    
-            value = country.properties.income_grp
-
-            if(value == "1. High income: OECD") {
-              g.colors[i] = "	#006400"
-            }
-            else if(value == "2. High income: nonOECD") {
-              g.colors[i] = "	#006400"
-            }
-            else if(value == "3. Upper middle income") {
-              g.colors[i] = 	"#228B22"
-            }
-            else if(value == "4. Lower middle income") {
-              g.colors[i] = 	"#32CD32"
-            }
-            else if(value == "5. Low income") {
-              g.colors[i] = 	"#98FB98"
-            }
-
-            g.values[i] = value
+          let color
+          if (this.mode === 'pop_est') {
+            color = 'green'
+            g.highlightColor = 'red'
+          } else if (this.mode === 'gdp_md_est') {
+            color = 'blue'
+            g.highlightColor = 'orange'
+          } else {
+            color = 'red'
+            g.highlightColor = 'green'
           }
-
+          if (propertyKey === 'gdp_per_cap') {
+            g.resetCountryColorsFromValues(color, 100000)
+          } else {
+            g.resetCountryColorsFromValues(color)
+          }
           g.draw()
-
+          g.drawLegend()
         }
-      }
-
       }
     })
   })
 </script>
-
-
-<style type='text/css'>
-  .my-legend .legend-title {
-    text-align: left;
-    margin-bottom: 8px;
-    font-weight: bold;
-    font-size: 90%;
-    }
-  .my-legend .legend-scale ul {
-    margin: 0;
-    padding: 0;
-    float: left;
-    list-style: none;
-    }
-  .my-legend .legend-scale ul li {
-    display: block;
-    float: left;
-    width: 50px;
-    margin-bottom: 6px;
-    text-align: center;
-    font-size: 80%;
-    list-style: none;
-    }
-  .my-legend ul.legend-labels li span {
-    display: block;
-    float: left;
-    height: 15px;
-    width: 50px;
-    }
-  .my-legend .legend-source {
-    font-size: 70%;
-    color: #999;
-    clear: both;
-    }
-  .my-legend a {
-    color: #777;
-    }
-</style>
-</style>
